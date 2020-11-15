@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define MIN(a,b)  ((a)<(b)?(a):(b))
+#define BLOCK_LOW(id, p, n) ((id) * (n) / (p))
+#define BLOCK_HIGH(id, p, n) (BLOCK_LOW((id)+1, p, n) - 1)
 
 int main (int argc, char *argv[])
 {
@@ -61,19 +63,96 @@ int main (int argc, char *argv[])
    elapsed_time += MPI_Wtime();
 
    /* Add you code here  */
+    low_value = 2 + BLOCK_LOW(id, p, n-1);
+    high_value = 2 + BLOCK_HIGH(id, p, n-1);
+    // size = BLOCK_SIZE(id, p, n-1);
+    low_value = low_value + (low_value + 1) % 2;
+    high_value = high_value - (high_value + 1) % 2;
+    size = (high_value - low_value) / 2 + 1;
+    local_prime_size  = (int)sqrt((double)(n)) - 1;
+    
+    /**
+     * process 0 must holds all primes used
+     */
+    proc0_size = (n/2 - 1) / p;
+    if ((2 + proc0_size) < (int) sqrt((double) n/2))
+    {
+        if (id == 0)
+            printf("Too many processes.\n");
+        MPI_Finalize();
+        exit(1);
+    }
 
+    /**
+     * Allocation
+     */
+    marked = (char*) malloc(size);
+    local_prime_marked = (char *) malloc (local_prime_size);
+    if (marked == NULL || local_prime_marked == NULL)
+    {
+        printf("id: %d - Cannot allocate enough memory.\n", id);
+        MPI_Finalize();
+        exit(1);
+    }
 
+    /**
+     * Core Function
+     */
+    local_prime = 2;
+    for (i = 0; i < local_prime_size; i++)
+        local_prime_marked[i] = 0;
+    index = 0;
+    do
+    {
+        local_first = local_prime * local_prime - 2;
+        for (i = local_first; i < local_prime_size; i += local_prime)
+            local_prime_marked[i] = 1;
+        while (local_prime_marked[++index] == 1);
+        local_prime = 2 + index;
+    } while (local_prime * local_prime <= n);
+    
 
+    for (i = 0; i < size; i++)
+        marked[i] = 0;
 
-
-
-
-
-
-
-
-
-
+    unsigned long int block_size = 1048576;
+    // unsigned long int block_size = 2;
+    unsigned long long int block_low_value = low_value;
+    unsigned long long int block_high_value = block_low_value + 2 * (block_size - 1);
+    
+    do
+    {
+        index = 0;
+        prime = 3;
+        while (prime * prime <= block_high_value)
+        {
+            if (prime * prime > block_low_value)
+                first = (prime * prime - block_low_value) / 2;
+            else
+            {
+                if ((block_low_value % prime) == 0)
+                    first = 0;
+                else
+                    first = (prime - (block_low_value % prime) + block_low_value / prime % 2 * prime) / 2;
+            }
+            for (i = first + (block_low_value - low_value) / 2; i <= (block_high_value - low_value) / 2; i += prime)
+                marked[i] = 1;
+            while(local_prime_marked[++index] == 1);
+            prime = index + 2;
+        }
+        block_low_value = block_high_value + 2;
+        block_high_value = block_low_value + 2 * (block_size - 1);
+        if (block_high_value > high_value)
+            block_high_value = high_value;
+    } while (block_low_value <= high_value);
+    count = 0;
+    for (i = 0; i < size; i++)
+        if (marked[i] == 0)
+            count++;
+    if (id == 0)
+        count++;    // 2
+    if (p > 1)
+        MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
    /* Print the results */
 
    if (!id) {
