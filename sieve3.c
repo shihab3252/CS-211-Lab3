@@ -154,6 +154,7 @@ int main (int argc, char *argv[])
     if (p > 1)
         MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
    /* Print the results */
+   elapsed_time += MPI_Wtime();
 
    if (!id) {
       printf("The total number of prime: %ld, total time: %10.6f, total node %d\n", global_count, elapsed_time, p);
