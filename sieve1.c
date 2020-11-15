@@ -44,9 +44,9 @@ int main (int argc, char *argv[])
    /* Stop the timer */
 
    /* Add you code here  */
-    low_value = 2 + BLOCK_LOW(id, size, n-1);
-    high_value = 2 + BLOCK_HIGH(id, size, n-1);
-    // size = BLOCK_SIZE(id, size, n-1);
+   low_value = 2 + BLOCK_LOW(id, p, n-1);
+    high_value = 2 + BLOCK_HIGH(id, p, n-1);
+    // size = BLOCK_SIZE(id, p, n-1);
     low_value = low_value + (low_value + 1) % 2;
     high_value = high_value - (high_value + 1) % 2;
     size = (high_value - low_value) / 2 + 1;
@@ -54,7 +54,7 @@ int main (int argc, char *argv[])
     /**
      * process 0 must holds all primes used
      */
-    proc0_size = (n/2 - 1) / size;
+    proc0_size = (n/2 - 1) / p;
     if ((2 + proc0_size) < (int) sqrt((double) n/2))
     {
         if (id == 0)
@@ -101,7 +101,7 @@ int main (int argc, char *argv[])
             while(marked[++index] == 1);
             prime = 3 + index * 2;
         }
-        if (size > 1)
+        if (p > 1)
             MPI_Bcast(&prime, 1, MPI_INT, 0, MPI_COMM_WORLD);
     } while (prime * prime <= n);
     count = 0;
@@ -110,8 +110,19 @@ int main (int argc, char *argv[])
             count++;
     if (id == 0)
         count++;    // 2
-    if (size > 1)
+    if (p > 1)
         MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+
+
+
+
+
+
+
+
+
+
    elapsed_time += MPI_Wtime();
 
 
@@ -124,4 +135,3 @@ int main (int argc, char *argv[])
    MPI_Finalize ();
    return 0;
 }
-
