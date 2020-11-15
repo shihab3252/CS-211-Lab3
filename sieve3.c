@@ -59,11 +59,7 @@ int main (int argc, char *argv[])
       last array elements */
 
    /* Stop the timer */
-
-   elapsed_time += MPI_Wtime();
-
-   /* Add you code here  */
-    low_value = 2 + BLOCK_LOW(id, p, n-1);
+       low_value = 2 + BLOCK_LOW(id, p, n-1);
     high_value = 2 + BLOCK_HIGH(id, p, n-1);
     // size = BLOCK_SIZE(id, p, n-1);
     low_value = low_value + (low_value + 1) % 2;
@@ -153,8 +149,24 @@ int main (int argc, char *argv[])
         count++;    // 2
     if (p > 1)
         MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-   /* Print the results */
+
    elapsed_time += MPI_Wtime();
+
+   /* Add you code here  */
+
+
+
+
+
+
+
+
+
+
+
+
+
+   /* Print the results */
 
    if (!id) {
       printf("The total number of prime: %ld, total time: %10.6f, total node %d\n", global_count, elapsed_time, p);
@@ -163,4 +175,3 @@ int main (int argc, char *argv[])
    MPI_Finalize ();
    return 0;
 }
-
