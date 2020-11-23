@@ -61,7 +61,6 @@ int main (int argc, char *argv[])
    /* Add you code here  */
     low_value = 2 + BLOCK_LOW(id, p, n-1);
     high_value = 2 + BLOCK_HIGH(id, p, n-1);
-    // size = BLOCK_SIZE(id, p, n-1);
     low_value = low_value + (low_value + 1) % 2;
     high_value = high_value - (high_value + 1) % 2;
     size = (high_value - low_value) / 2 + 1;
@@ -133,7 +132,7 @@ int main (int argc, char *argv[])
         if (marked[i] == 0)
             count++;
     if (id == 0)
-        count++;    // 2
+        count++;    
     if (p > 1)
         MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
    /* Stop the timer */
