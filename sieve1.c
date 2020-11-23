@@ -44,15 +44,17 @@ int main (int argc, char *argv[])
    /* Stop the timer */
 
    /* Add you code here  */
+   /*
    low_value = 2 + BLOCK_LOW(id, p, n-1);
     high_value = 2 + BLOCK_HIGH(id, p, n-1);
     low_value = low_value + (low_value + 1) % 2;
     high_value = high_value - (high_value + 1) % 2;
     size = (high_value - low_value) / 2 + 1;
-    
+    */
     /**
      * process 0 must holds all primes used
      */
+    /*
     proc0_size = (n/2 - 1) / p;
     if ((2 + proc0_size) < (int) sqrt((double) n/2))
     {
@@ -65,6 +67,7 @@ int main (int argc, char *argv[])
     /**
      * Allocation
      */
+    /*
     marked = (char*) malloc(size);
     if (marked == NULL)
     {
@@ -78,6 +81,7 @@ int main (int argc, char *argv[])
     /**
      * Core Function
      */
+    /*
     if (id == 0)
         index = 0;
     prime = 3;
@@ -111,6 +115,71 @@ int main (int argc, char *argv[])
         count++;   
     if (p > 1)
         MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    */
+    unsigned long int oddn = n - n / 2 - 1; 
+   unsigned long int low_value_idx = id * oddn / p;
+   unsigned long int high_value_idx = -1 + (id + 1) * oddn / p;
+   size = high_value_idx - low_value_idx + 1;
+   low_value = 2 * low_value_idx + 3;
+   high_value = 2 * high_value_idx + 3;
+
+   /* Bail out if all the primes used for sieving are
+      not all held by process 0 */
+
+   proc0_size = (oddn - 1) / p;
+
+   if (proc0_size < (int) sqrt((double) oddn)) {
+      if (!id) printf("Too many processes\n");
+      MPI_Finalize();
+      exit(1);
+   }
+
+   /* Allocate this process's share of the array. */
+
+   marked = (char *) malloc(size);
+
+   if (marked == NULL) {
+      printf("Cannot allocate enough memory\n");
+      MPI_Finalize();
+      exit(1);
+   }
+
+   for (i = 0; i < size; i++) marked[i] = 0;
+   if (!id) index = 0;
+   prime = 3;
+   do {
+      if (prime * prime > low_value)
+         first = (prime * prime - low_value) / 2;
+         //odd number minuses odd number = even number, divide by 2 to find index
+      else {
+         if (!(low_value % prime)) first = 0;
+         else 
+         {
+            first = (low_value / prime + 1) * prime;
+            first = ((first - low_value) % 2) == 0 ? first : first + prime;
+            //make sure first is odd
+            first = (first - low_value) / 2;
+         }
+      }
+      //dont need change stride = 2*prime/2 = prime, 
+      for (i = first; i < size; i += prime) marked[i] = 1;
+      if (!id) {
+         while (marked[++index]);
+         prime = 2 * index + 3;
+      }
+      if (p > 1) MPI_Bcast(&prime, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   } while (prime * prime <= n);
+   count = 0;
+   for (i = 0; i < size; i++)
+      if (!marked[i]) count++;
+   if (p > 1)
+      MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM,
+                  0, MPI_COMM_WORLD);
+
+   global_count++;
+   //add 2 
+
+   /* Stop the timer */
    elapsed_time += MPI_Wtime();
 
 
